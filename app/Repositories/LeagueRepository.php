@@ -55,16 +55,6 @@ class LeagueRepository
     }
 
     /**
-     * @param array $data
-     * @param $team_id
-     * @return mixed
-     */
-    public function updateLeauge($data = array(), $team_id)
-    {
-        return $this->model->where('team_id', '=', $team_id)->update($data);
-    }
-
-    /**
      * @param $team_id
      * @return mixed
      */

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\League;
 use App\Models\MatchGame;
+use App\Models\Team;
+use App\Models\TeamStrength;
 use App\Repositories\LeagueRepository;
 use App\Repositories\PlayRepository;
 
@@ -16,11 +19,6 @@ class HomeController extends Controller
     public $fixture;
     public $result = array();
 
-    /**
-     * HomeController constructor.
-     * @param LeagueRepository $leagueRepository
-     * @param PlayRepository $playRepository
-     */
     public function __construct(LeagueRepository $leagueRepository, PlayRepository $playRepository)
     {
         $this->leagueRepository = $leagueRepository;
@@ -28,10 +26,6 @@ class HomeController extends Controller
         $this->leagueRepository->createLeague();
     }
 
-
-    /**
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
-     */
     public function getLeague()
     {
         $this->weeks = $this->playRepository->getWeeks();
@@ -44,6 +38,9 @@ class HomeController extends Controller
 
         $strength = $this->playRepository->getAllStrenght();
 
+        $teams = Team::all();
+        $championProbabilities = $this->calculateChampionProbabilities($teams);
+
         return view(
             'pages/home',
             ['league' => $this->league,
@@ -51,14 +48,67 @@ class HomeController extends Controller
                 'fixture' => $grouped->toArray(),
                 'weeks' => $this->weeks,
                 'strength' => $strength,
-                'currentWeek' => $currentWeek["week_id"] ?? 0,
-                'types' => array('weak', 'average', 'strong')
+                'currentWeek' => $currentWeek["week_id"] ?? 6,
+                'types' => array('weak', 'average', 'strong'),
+                'championProbabilities' => $championProbabilities,
+                'teams' => $teams
             ]);
     }
 
-    /**
-     * @return \Illuminate\Http\JsonResponse
-     */
+    private function calculateChampionProbabilities($teams)
+    {
+        $teams = League::all();
+        $matchGames = MatchGame::all();
+        $teamStrengths = TeamStrength::all();
+
+        $championProbabilities = [];
+        $totalProbability = 0;
+        foreach ($teams as $team) {
+            $points = $team->points;
+            $strength = $this->getStrengthValue($teamStrengths->where('team_id', $team->id)->first()->strength);
+
+            $championProbability = $this->calculateWinProbability($points, $strength);
+            $championProbabilities[$team->id] = $championProbability;
+            $totalProbability += $championProbability;
+        }
+
+        $totalRoundedProbability = 0;
+        foreach ($championProbabilities as $teamId => $probability) {
+            $championProbabilities[$teamId] = ($totalProbability != 0) ? round(($probability / $totalProbability * 100)) : 0;
+            $totalRoundedProbability += $championProbabilities[$teamId];
+        }
+
+        if ($totalRoundedProbability !== 100 && $totalRoundedProbability !== 0) {
+            $maxProbabilityTeamId = array_keys($championProbabilities, max($championProbabilities))[0];
+            $championProbabilities[$maxProbabilityTeamId] += 100 - $totalRoundedProbability;
+        }
+
+        return $championProbabilities;
+
+    }
+
+    private function getStrengthValue($strength)
+    {
+        switch ($strength) {
+            case 'weak':
+                return 1;
+            case 'average':
+                return 2;
+            case 'strong':
+                return 3;
+            default:
+                return 1; // Varsayılan olarak "weak" kabul et
+        }
+    }
+
+    private function calculateWinProbability($points, $strength)
+    {
+        $multiplier = 0.1;
+
+        $probability = (($points * $strength) * $multiplier) * 100;
+
+        return $probability;
+    }
     public function refreshFixture()
     {
         $this->weeks = $this->playRepository->getWeeks();
@@ -68,20 +118,19 @@ class HomeController extends Controller
         return response()->json(array('weeks' => $this->weeks, 'items' => $grouped->toArray()));
     }
 
-    /**
-     *
-     */
     public function play()
     {
+
         $matches = $this->playRepository->getAllMatches();
         $this->playGame($matches);
     }
 
+    public function refreshLeauge()
+    {
+        $this->league = $this->leagueRepository->getAll();
+        return response()->json($this->league);
+    }
 
-    /**
-     * @param $week
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function playWeekly($week)
     {
         $matches = $this->playRepository->getMatchesFromWeek($week);
@@ -91,7 +140,6 @@ class HomeController extends Controller
         return $this->getLeague();
     }
 
-
     public function reset()
     {
         $this->playRepository->truncateMatches();
@@ -99,9 +147,6 @@ class HomeController extends Controller
         $this->playRepository->createFixture();
     }
 
-    /**
-     * @param $matches
-     */
     private function playGame($matches)
     {
         foreach ($matches as $match) {
@@ -117,5 +162,4 @@ class HomeController extends Controller
         }
 
     }
-
 }

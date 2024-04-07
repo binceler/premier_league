@@ -1,138 +1,127 @@
 @extends('layouts.default')
 @section('content')
-<style>
-    #home-goal,#away-goal,#t{
-        width:40px;
-    }
-    #home-goal:after,#away-goal:after{
-        font-family: FontAwesome;
-        content: "\f040";
-        padding: 5px;
-    }
-</style>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
     <div style="margin: 10px auto">
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-hover">
-                    <thead>
-                    <tr>
-                        <td colspan="7">League Table</td>
-                    </tr>
-                    <tr>
-                        <td>Teams</td>
-                        <td>PTS</td>
-                        <td>P</td>
-                        <td>W</td>
-                        <td>D</td>
-                        <td>L</td>
-                        <td>GD</td>
-                    </tr>
-                    </thead>
-                    <tbody id="leauge-table-body">
-                    @if (!empty($league))
-                        @foreach ($league as $lg)
-
+        <table class="table table-hover">
+            <tr>
+                <th>League Table</th>
+                <th>Macth Results</th>
+                <th>Champion Probabilities</th>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Teams</th>
+                            <th>PTS</th>
+                            <th>P</th>
+                            <th>W</th>
+                            <th>D</th>
+                            <th>L</th>
+                            <th>GD</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if (!empty($league))
+                            @foreach ($league as $lg)
+                                <tr>
+                                    <td> {{$lg->name}}</td>
+                                    <td>@if(isset($lg->points)) {{$lg->points}} @else 0 @endif</td>
+                                    <td>@if(isset($lg->played)) {{$lg->played}} @else 0 @endif</td>
+                                    <td>@if(isset($lg->won)) {{$lg->won}} @else 0 @endif</td>
+                                    <td>@if(isset($lg->draw)) {{$lg->draw}} @else 0 @endif</td>
+                                    <td>@if(isset($lg->lose)) {{$lg->lose}} @else 0 @endif</td>
+                                    <td>@if(isset($lg->goal_drawn)) {{$lg->goal_drawn}} @else 0 @endif</td>
+                                </tr>
+                            @endforeach
+                        @endif
+                        </tbody>
+                    </table>
+                </td>
+                <td style="vertical-align: top;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th colspan="3">{{ $currentWeek }} st Week Matches</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if (!empty($matches))
+                            @foreach ($matches[$currentWeek] as $results)
+                                <tr>
+                                    <td>{{$results['home_team']}}</td>
+                                    <td>
+                                        <div style="float:left" id="home-goal" data-match-id="{{$results['id']}}">{{$results['home_goal']}}</div>
+                                        <div style="float:left" id="t">-</div>
+                                        <div style="float:left" id="away-goal" data-match-id="{{$results['id']}}">{{$results['away_goal']}} </div>
+                                    </td>
+                                    <td>{{$results['away_team']}}</td>
+                                </tr>
+                            @endforeach
+                        @endif
+                        </tbody>
+                    </table>
+                </td>
+                <td style="vertical-align: top;">
+                    <table border='0'>
+                        <thead>
+                        <tr>
+                            <th>{{ $currentWeek }}st Week Predictions of Championship</th>
+                        </tr>
+                        <tr>
+                            <th>Team</th>
+                            <th>Win Probability (%)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach ($championProbabilities as $teamId => $probability)
                             <tr>
-                                <td><img width="50" height="50" src="{{ asset('images/'.$lg->logo) }}"/> {{$lg->name}}
-                                </td>
-                                <td>@if(isset($lg->points)) {{$lg->points}} @else 0 @endif</td>
-                                <td>@if(isset($lg->played)) {{$lg->played}} @else 0 @endif</td>
-                                <td>@if(isset($lg->won)) {{$lg->won}} @else 0 @endif</td>
-                                <td>@if(isset($lg->draw)) {{$lg->draw}} @else 0 @endif</td>
-                                <td>@if(isset($lg->lose)) {{$lg->lose}} @else 0 @endif</td>
-                                <td>@if(isset($lg->goal_drawn)) {{$lg->goal_drawn}} @else 0 @endif</td>
+                                <td>{{ $teams->find($teamId)->name }}</td>
+                                <td>{{ $probability }}</td>
                             </tr>
                         @endforeach
-                    @endif
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-md-6">
-                <table class="table table-hover" id="weekly" data-week-id="2" real=1>
-                    <thead>
-                    <tr>
-                        <td colspan="4">Matches</td>
-                    </tr>
-                    </thead>
-                    <tbody id="weekly-matches">
-
-                    @if (!empty($matches) && $currentWeek != 0)
-                        @foreach ($matches[$currentWeek] as $results)
-                            <tr>
-                                <td colspan="3">{{ $currentWeek }} st Week Matches</td>
-                            </tr>
-                            <tr>
-                                <td><img width="30" height="30" src="{{ asset('images/'.$results['home_logo']) }}"/> {{$results['home_team']}}</td>
-                                <td>
-                                    <div  style="float:left" id="home-goal" data-match-id="{{$results['id']}}">{{$results['home_goal']}}</div>
-                                    <div style="float:left" id="t">-</div>
-                                    <div style="float:left" id="away-goal" data-match-id="{{$results['id']}}">{{$results['away_goal']}} </div>
-                                </td>
-                                <td><img width="30" height="30" src="{{ asset('images/'.$results['away_logo']) }}"/> {{$results['away_team']}}</td>
-                            </tr>
-                        @endforeach
-
-                    </tbody>
-                    <tfoot>
-                    <tr>
-                        <td>
-                            <button class="btn btn-success pull-right" id="play-weekly" onclick="playWeekly({{ $currentWeek }})" >Play Weekly</button>
-                        </td>
-                    </tr>
-                    </tfoot>
-                    @endif
-                </table>
-            </div>
-            <table class="table">
-                <tr>
-                    <td>
-                        <button class="btn btn-success" id="play-all" onclick="playAll()">Play all</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-danger" id="reset" onclick="resetFixture()">Reset Fixture</button>
-                    </td>
-
-                </tr>
-            </table>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-hover">
-                    <thead>
-                    <tr>
-                        <td colspan="3">Fixture</td>
-                    </tr>
-                    </thead>
-                    <tbody id="table-body">
-                    @if (!empty($weeks))
-                        @foreach($weeks as $week)
-                            <tr>
-                                <td colspan="3">{{$week->name}} Matches</td>
-                            </tr>
-                            @if (!empty($fixture) && isset($fixture[$week->id]))
-                                @foreach ($fixture[$week->id] as $results)
-                                    <tr>
-                                        <td><img width="30" height="30" src="{{ asset('images/'.$results['home_logo']) }}"/> {{$results['home_team']}}</td>
-                                        <td>{{$results['home_goal']}} - {{$results['away_goal']}}</td>
-                                        <td><img width="30" height="30" src="{{ asset('images/'.$results['away_logo']) }}"/> {{$results['away_team']}}</td>
-                                    </tr>
-
-                                @endforeach
-                            @endif
-                        @endforeach
-                    @endif
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-md-6">
-                <div id="chart">
-                </div>
-            </div>
-        </div>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    <table style="width:100%">
+                        <tr>
+                            <td style="text-align:center;">
+                                <button class="btn btn-success pull-right" id="play-weekly" onclick="playWeekly({{ $currentWeek }})">Play Weekly</button>
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="btn btn-success" id="play-all" onclick="playAll()">Play all</button>
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="btn btn-danger" id="reset" onclick="resetFixture()">Reset Fixture</button>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
     </div>
 @endsection
 <script type="text/javascript">
-    // Haftalık maçları oynatma fonksiyonu
     function playWeekly(week) {
 
         if (week == 7) {
@@ -143,7 +132,6 @@
             url: "/play-weekly/" + week,
             type: 'GET',
             success: function(response) {
-                // AJAX isteği başarılı olduğunda yapılacak işlemler burada
                 console.log(response);
                 resetTable();
             },
@@ -153,7 +141,6 @@
         });
     }
 
-    // Tüm maçları oynatma fonksiyonu
     function playAll() {
         $.ajax({
             url: '/play-all',
@@ -163,35 +150,29 @@
                 resetTable();
             },
             error: function(xhr, status, error) {
-                // AJAX isteği başarısız olduğunda yapılacak işlemler burada
                 console.error(xhr.responseText);
             }
         });
     }
 
-    // Fixture'ı sıfırlama fonksiyonu
     function resetFixture() {
         $.ajax({
             url: '/reset',
             type: 'GET',
             success: function(response) {
-                // AJAX isteği başarılı olduğunda yapılacak işlemler burada
                 console.log(response);
                 resetTable();
             },
             error: function(xhr, status, error) {
-                // AJAX isteği başarısız olduğunda yapılacak işlemler burada
                 console.error(xhr.responseText);
             }
         });
     }
 
     function resetTable() {
-        // Tabloyu içeren div elementini seç
+
         var tableDiv = $('#table-body');
-        // Tablo içeriğini boşalt
         tableDiv.empty();
-        // Yeniden veri almak için sayfayı yenileme
         location.reload();
     }
 

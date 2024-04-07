@@ -10,7 +10,7 @@
 
             </div>
             <div>
-                <h1>Premier League Predictor</h1>
+                <h1 id="header-info">Premier League Predictor</h1>
             </div>
 
 

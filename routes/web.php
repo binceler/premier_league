@@ -15,5 +15,4 @@ Route::get('/', "App\Http\Controllers\HomeController@getLeague")->name('home.get
 Route::get('/play-all', "App\Http\Controllers\HomeController@play")->name('home.play');
 Route::get('/play-weekly/{week}', "App\Http\Controllers\HomeController@playWeekly")->name('home.play_weekly');
 Route::get('/reset', "App\Http\Controllers\HomeController@reset");
-Route::get('fixture', "App\Http\Controllers\HomeController@refreshFixture");
 

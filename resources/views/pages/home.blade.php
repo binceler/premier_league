@@ -17,7 +17,7 @@
             background-color: #dddddd;
         }
     </style>
-    <div style="margin: 10px auto">
+    <div style="margin: 10px auto" id="all-page">
         <table class="table table-hover">
             <tr>
                 <th>League Table</th>
@@ -133,7 +133,7 @@
             type: 'GET',
             success: function(response) {
                 console.log(response);
-                resetTable();
+                resetTable(response);
             },
             error: function(xhr, status, error) {
                 console.error(xhr.responseText);
@@ -147,7 +147,7 @@
             type: 'GET',
             success: function(response) {
                 console.log(response);
-                resetTable();
+                resetTable(response);
             },
             error: function(xhr, status, error) {
                 console.error(xhr.responseText);
@@ -160,8 +160,9 @@
             url: '/reset',
             type: 'GET',
             success: function(response) {
-                console.log(response);
-                resetTable();
+                var tableDiv = $('#table-body');
+                tableDiv.empty();
+                location.reload();
             },
             error: function(xhr, status, error) {
                 console.error(xhr.responseText);
@@ -169,11 +170,15 @@
         });
     }
 
-    function resetTable() {
+    function resetTable(response) {
 
-        var tableDiv = $('#table-body');
+        var tableDiv = $('#all-page');
+        var headerInfo = $('#header-info');
+
+        headerInfo.empty();
         tableDiv.empty();
-        location.reload();
+
+        tableDiv.html(response);
     }
 
     function changeStrength(id){

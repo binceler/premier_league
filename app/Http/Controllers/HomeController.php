@@ -28,13 +28,15 @@ class HomeController extends Controller
 
     public function getLeague()
     {
+        $currentWeek = MatchGame::where('played', 0)->first();
+        $currentWeekId = $currentWeek["week_id"] ?? 6;
+        $this->playWeeklyDefault($currentWeekId);
         $this->weeks = $this->playRepository->getWeeks();
         $this->league = $this->leagueRepository->getAll();
         $this->playRepository->createFixture();
         $this->fixture = $this->playRepository->getFixture();
         $collection = collect($this->fixture);
         $grouped = $collection->groupBy('week_id');
-        $currentWeek = MatchGame::where('played', 0)->first();
 
         $strength = $this->playRepository->getAllStrenght();
 
@@ -60,6 +62,7 @@ class HomeController extends Controller
         $teams = League::all();
         $matchGames = MatchGame::all();
         $teamStrengths = TeamStrength::all();
+        $allTeam = Team::all();
 
         $championProbabilities = [];
         $totalProbability = 0;
@@ -83,6 +86,12 @@ class HomeController extends Controller
             $championProbabilities[$maxProbabilityTeamId] += 100 - $totalRoundedProbability;
         }
 
+        if (empty($championProbabilities)) {
+            for ($i = 1; $i <= count($allTeam); $i++) {
+                $championProbabilities[$i] = 0;
+            }
+        }
+
         return $championProbabilities;
 
     }
@@ -90,8 +99,6 @@ class HomeController extends Controller
     private function getStrengthValue($strength)
     {
         switch ($strength) {
-            case 'weak':
-                return 1;
             case 'average':
                 return 2;
             case 'strong':
@@ -109,27 +116,15 @@ class HomeController extends Controller
 
         return $probability;
     }
-    public function refreshFixture()
-    {
-        $this->weeks = $this->playRepository->getWeeks();
-        $this->fixture = $this->playRepository->getFixture();
-        $collection = collect($this->fixture);
-        $grouped = $collection->groupBy('week_id');
-        return response()->json(array('weeks' => $this->weeks, 'items' => $grouped->toArray()));
-    }
 
     public function play()
     {
 
         $matches = $this->playRepository->getAllMatches();
         $this->playGame($matches);
+        return $this->getLeague();
     }
 
-    public function refreshLeauge()
-    {
-        $this->league = $this->leagueRepository->getAll();
-        return response()->json($this->league);
-    }
 
     public function playWeekly($week)
     {
@@ -140,11 +135,20 @@ class HomeController extends Controller
         return $this->getLeague();
     }
 
+    public function playWeeklyDefault($week)
+    {
+        $matches = $this->playRepository->getMatchesFromWeek($week);
+        $this->playGame($matches);
+        $result = $this->playRepository->getFixtureByWeekId($week);
+
+    }
+
     public function reset()
     {
         $this->playRepository->truncateMatches();
         $this->leagueRepository->truncateLeauge();
         $this->playRepository->createFixture();
+        //return $this->getLeague();
     }
 
     private function playGame($matches)

@@ -106,7 +106,7 @@
                     <table style="width:100%">
                         <tr>
                             <td style="text-align:center;">
-                                <button class="btn btn-success pull-right" id="play-weekly" onclick="playWeekly({{ $currentWeek }})">Play Weekly</button>
+                                <button class="btn btn-success pull-right" id="play-weekly" onclick="playWeekly({{ $currentWeek }})">Play Next Week</button>
                             </td>
                             <td style="text-align:center;">
                                 <button class="btn btn-success" id="play-all" onclick="playAll()">Play all</button>
